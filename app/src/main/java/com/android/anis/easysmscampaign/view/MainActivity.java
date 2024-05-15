@@ -20,6 +20,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Process;
@@ -512,10 +513,22 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_DOC && resultCode == Activity.RESULT_OK) {
             Log.e(TAG, "onActivityResult success: ");
+            Uri uri = data.getData();
+            String filePath = getPath(uri);
+            Toast.makeText(this,filePath,Toast.LENGTH_LONG).show();
+
+            File source = new File(filePath);
+            assert uri != null;
+            String filename = uri.getLastPathSegment();
+            File destination = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/TempFolder/" + filename);
+            copy(source,destination);
+            Log.e(TAG,destination.getPath());
+
         }
     }
 
     private void browseDocument(){
+
 
         String[] mimeTypes =
                 {
@@ -527,13 +540,8 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
 
-
-        String mimeTypesStr = "";
-        for (String mimeType : mimeTypes) {
-            mimeTypesStr += mimeType + "|";
-        }
-        intent.setType(mimeTypesStr.substring(0,mimeTypesStr.length() - 1));
-
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES,mimeTypes);
         startActivityForResult(Intent.createChooser(intent,"Choose File"), REQUEST_CODE_DOC);
 
     }
@@ -569,10 +577,11 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
 
 
         try {
-            if(in != null)
-            in.transferTo(0, in.size(), out);
+            if(in != null) {
+                in.transferTo(0, in.size(), out);
+            }
         } catch(Exception exception){
-            // post to log
+            Toast.makeText(this,"An IO Exception occurred",Toast.LENGTH_LONG).show();
         } finally {
             try {
                 if (in != null)
