@@ -117,8 +117,8 @@ public class MainActivityViewModel extends AndroidViewModel
     }
 
     @Override
-    public Uri initiateSharing() {
-        Log.e(TAG, "initiateSharing: ");
+    public Uri initiateSendSMS() {
+        Log.e(TAG, "initiateSendSMS: ");
         return FileShareUtils.accessFile(getApplication(), Constants.EXCEL_FILE_NAME);
     }
 

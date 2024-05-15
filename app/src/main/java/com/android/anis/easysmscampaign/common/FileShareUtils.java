@@ -24,7 +24,7 @@ public class FileShareUtils {
 
         if (file.exists()) {
             return FileProvider.getUriForFile(context,
-                    "com.ranit.contacts.fileprovider", file);
+                    "com.anis.contacts.fileprovider", file);
         } else {
             return null;
         }

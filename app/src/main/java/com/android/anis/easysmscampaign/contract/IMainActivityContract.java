@@ -21,7 +21,7 @@ public interface IMainActivityContract {
         void setupHandlerThreads();
         void destroyHandlerThreads();
         void onImportContactButtonClicked();
-        void onShareButtonClicked();
+        void onSendSMSButtonClicked();
         void switchVisibility(android.view.View view, int visibility);
         void enableUIComponent(android.view.View componentName);
         void disableUIComponent(android.view.View componentName);
@@ -36,6 +36,6 @@ public interface IMainActivityContract {
         void initiateImport();
         void initiateExport(List<ContactResponse> dataList);
         void initiateRead();
-        Uri initiateSharing();
+        Uri initiateSendSMS();
     }
 }

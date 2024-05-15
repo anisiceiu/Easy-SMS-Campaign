@@ -23,6 +23,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.android.anis.easysmscampaign.R;
@@ -68,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     private LottieAnimationView importLottieView;
     private LottieAnimationView exportLottieView;
     private LottieAnimationView readLottieView;
+    private EditText smsText;
 
     private final String NO_DATA_ANIMATION = "no_data.json";
     private final String LOADING_ANIMATION = "loading.json";
@@ -258,7 +260,7 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
             importContactsButton.setOnClickListener(view -> onImportContactButtonClicked());
         }
 
-        shareButton.setOnClickListener(view -> onShareButtonClicked());
+        shareButton.setOnClickListener(view -> onSendSMSButtonClicked());
     }
 
     @Override
@@ -280,15 +282,13 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     public void initializeViews() {
         Log.e(TAG, "initializeViews: ");
         importContactsButton = mBinding.importContactButton;
-
+        smsText = mBinding.editDescription;
         shareButton = mBinding.shareExcelFloatingButton;
         contactsRecyclerView = mBinding.displayContactsRecyclerView;
         constraintLayout = mBinding.constraintLayout;
         lottieAnimationView = mBinding.lottieAnimationView;
         importLottieView = mBinding.importContactLottie;
 
-        //disableUIComponent(exportExcelButton);
-        //disableUIComponent(readExcelButton);
 
         setupLottieAnimation(lottieAnimationView, NO_DATA_ANIMATION);
     }
@@ -342,14 +342,20 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
 
 
     @Override
-    public void onShareButtonClicked() {
-        Log.e(TAG, "onShareButtonClicked: ");
-        Uri fileUri = mViewModel.initiateSharing();
+    public void onSendSMSButtonClicked() {
+        Log.e(TAG, "onSendSMSButtonClicked: ");
+        Uri fileUri = mViewModel.initiateSendSMS();
 
-        if (fileUri == null) {
-            displaySnackBar("Generate Excel before sharing");
-        } else {
-            launchShareFileIntent(fileUri);
+
+        if (smsText == null || smsText.getText().toString().matches(""))
+            {
+                displaySnackBar("SMS text is empty");
+            }
+            else if(fileUri == null || importedExcelContactsList.isEmpty()){
+                displaySnackBar("No recipients");
+            }
+         else {
+                sendSMS();
         }
     }
 
@@ -486,5 +492,10 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         startActivity(intent);
+    }
+
+    private void sendSMS()
+    {
+        displaySnackBar("Sending SMS");
     }
 }
