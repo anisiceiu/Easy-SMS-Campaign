@@ -533,10 +533,13 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
                 copyInputStreamToFile(inputStream,file);
                 importedExcelContactsList = ExcelUtils.getExcelDataFromFile(file);
                 Log.e(TAG,"Your Contact Count:"+importedExcelContactsList.size());
+
+                //setupLottieAnimation(readLottieView, DONE_ANIMATION);
+                setupRecyclerView();
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
-            
+
         }
     }
 
