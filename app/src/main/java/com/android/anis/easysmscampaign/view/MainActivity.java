@@ -35,6 +35,7 @@ import android.widget.Toast;
 import com.airbnb.lottie.LottieAnimationView;
 import com.android.anis.easysmscampaign.R;
 import com.android.anis.easysmscampaign.common.Constants;
+import com.android.anis.easysmscampaign.common.ExcelUtils;
 import com.android.anis.easysmscampaign.data.ContactResponse;
 import com.android.anis.easysmscampaign.data.response.BooleanResponse;
 import com.android.anis.easysmscampaign.data.response.DataResponse;
@@ -53,6 +54,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -515,15 +518,58 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
             Log.e(TAG, "onActivityResult success: ");
             Uri uri = data.getData();
             String filePath = getPath(uri);
-            Toast.makeText(this,filePath,Toast.LENGTH_LONG).show();
 
-            File source = new File(filePath);
             assert uri != null;
-            String filename = uri.getLastPathSegment();
-            File destination = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/TempFolder/" + filename);
-            copy(source,destination);
-            Log.e(TAG,destination.getPath());
+            String filename = "";
+            int cut = filePath.lastIndexOf('/');
+            if (cut != -1) {
+                filename = filePath.substring(cut + 1);
+            }
 
+            // File Input Stream gets me file data
+            try {
+                InputStream inputStream = getContentResolver().openInputStream(uri);
+                File file = new File(this.getExternalFilesDir(null), filename);
+                copyInputStreamToFile(inputStream,file);
+                importedExcelContactsList = ExcelUtils.getExcelDataFromFile(file);
+                Log.e(TAG,"Your Contact Count:"+importedExcelContactsList.size());
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+            
+        }
+    }
+
+    // Copy an InputStream to a File.
+//
+    private void copyInputStreamToFile(InputStream in, File file) {
+        OutputStream out = null;
+
+        try {
+            out = new FileOutputStream(file);
+            byte[] buf = new byte[1024];
+            int len;
+            while((len=in.read(buf))>0){
+                out.write(buf,0,len);
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            // Ensure that the InputStreams are closed even if there's an exception.
+            try {
+                if ( out != null ) {
+                    out.close();
+                }
+
+                // If you want to close the "in" InputStream yourself then remove this
+                // from here but ensure that you close it yourself eventually.
+                in.close();
+            }
+            catch ( IOException e ) {
+                e.printStackTrace();
+            }
         }
     }
 

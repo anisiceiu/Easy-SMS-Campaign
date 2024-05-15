@@ -283,4 +283,81 @@ public class ExcelUtils {
         return importedExcelData;
     }
 
+    public static List<ContactResponse> getExcelDataFromFile(File file) {
+        importedExcelData = new ArrayList<>();
+
+        FileInputStream fileInputStream = null;
+
+        try {
+            fileInputStream = new FileInputStream(file);
+            Log.e(TAG, "Reading from Excel" + file);
+
+            // Create instance having reference to .xls file
+            workbook = new HSSFWorkbook(fileInputStream);
+
+            // Fetch sheet at position 'i' from the workbook
+            sheet = workbook.getSheetAt(0);
+
+            // Iterate through each row
+            for (Row row : sheet) {
+                int index = 0;
+                List<String> rowDataList = new ArrayList<>();
+                List<ContactResponse.PhoneNumber> phoneNumberList = new ArrayList<>();
+
+                if (row.getRowNum() > 0) {
+                    // Iterate through all the columns in a row (Excluding header row)
+                    Iterator<Cell> cellIterator = row.cellIterator();
+
+                    while (cellIterator.hasNext()) {
+                        Cell cell = cellIterator.next();
+                        // Check cell type and format accordingly
+                        switch (cell.getCellType()) {
+                            case Cell.CELL_TYPE_NUMERIC:
+
+                                break;
+                            case Cell.CELL_TYPE_STRING:
+                                rowDataList.add(index, cell.getStringCellValue());
+                                index++;
+                                break;
+                        }
+                    }
+
+                    // Adding cells with phone numbers to phoneNumberList
+                    for (int i = 1; i < rowDataList.size(); i++) {
+                        phoneNumberList.add(new ContactResponse.PhoneNumber(rowDataList.get(i)));
+                    }
+
+                    /**
+                     * Index 0 of rowDataList will Always have name.
+                     * So, passing it as 'name' in ContactResponse
+                     *
+                     * Index 1 onwards of rowDataList will have phone numbers (if >1 numbers)
+                     * So, adding them to phoneNumberList
+                     *
+                     * Thus, importedExcelData list has appropriately mapped data
+                     */
+
+                    importedExcelData.add(new ContactResponse(rowDataList.get(0), phoneNumberList));
+                }
+
+            }
+
+        } catch (IOException e) {
+            Log.e(TAG, "Error Reading Exception: ", e);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to read file due to Exception: ", e);
+
+        } finally {
+            try {
+                if (null != fileInputStream) {
+                    fileInputStream.close();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        return importedExcelData;
+    }
 }
