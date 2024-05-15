@@ -1,5 +1,7 @@
 package com.android.anis.easysmscampaign.view;
 
+import static androidx.core.app.ActivityCompat.startActivityForResult;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -12,18 +14,22 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Process;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.android.anis.easysmscampaign.R;
@@ -41,6 +47,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +61,7 @@ import java.util.List;
  */
 public class MainActivity extends AppCompatActivity implements IMainActivityContract.View {
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final int REQUEST_CODE_DOC = 1;
 
     private ActivityMainBinding mBinding;
     private MainActivityViewModel mViewModel;
@@ -236,12 +249,16 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
         importedExcelContactsList = new ArrayList<>();
 
         mViewModel = new ViewModelProvider(this).get(MainActivityViewModel.class);
-        mViewModel.getContactsFromCPLiveData().observe(this, importContactsFromCPObserver);
-        mViewModel.isExcelGeneratedLiveData().observe(this, excelGenerationObserver);
-        mViewModel.readContactsFromExcelLiveData().observe(this, readExcelDataObserver);
+        //mViewModel.getContactsFromCPLiveData().observe(this, importContactsFromCPObserver);
+        //mViewModel.isExcelGeneratedLiveData().observe(this, excelGenerationObserver);
+        //mViewModel.readContactsFromExcelLiveData().observe(this, readExcelDataObserver);
+
 
         initializeViews();
+
         setupHandlerThreads();
+
+
     }
 
     @Override
@@ -336,7 +353,8 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     @Override
     public void onImportContactButtonClicked() {
         Log.e(TAG, "onImportContactButtonClicked: ");
-        contactsHandler.post(importContactsRunnable);
+        //contactsHandler.post(importContactsRunnable);
+        browseDocument();
     }
 
 
@@ -481,21 +499,96 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     }
 
     /**
-     * Method: Launch Share file screen
+     * Methods: File open copy read excel
      */
-    private void launchShareFileIntent(Uri uri) {
-        Intent intent = ShareCompat.IntentBuilder.from(this)
-                .setType("application/pdf")
-                .setStream(uri)
-                .setChooserTitle("Select application to share file")
-                .createChooserIntent()
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-        startActivity(intent);
-    }
 
     private void sendSMS()
     {
         displaySnackBar("Sending SMS");
     }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_DOC && resultCode == Activity.RESULT_OK) {
+            Log.e(TAG, "onActivityResult success: ");
+        }
+    }
+
+    private void browseDocument(){
+
+        String[] mimeTypes =
+                {
+                        "application/vnd.ms-excel",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        // .xls & .xlsx
+                };
+
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+
+        String mimeTypesStr = "";
+        for (String mimeType : mimeTypes) {
+            mimeTypesStr += mimeType + "|";
+        }
+        intent.setType(mimeTypesStr.substring(0,mimeTypesStr.length() - 1));
+
+        startActivityForResult(Intent.createChooser(intent,"Choose File"), REQUEST_CODE_DOC);
+
+    }
+    public String getPath(Uri uri) {
+
+        String path = null;
+        String[] projection = { MediaStore.Files.FileColumns.DATA };
+        Cursor cursor = getContentResolver().query(uri, projection, null, null, null);
+
+        if(cursor == null){
+            path = uri.getPath();
+        }
+        else{
+            cursor.moveToFirst();
+            int column_index = cursor.getColumnIndexOrThrow(projection[0]);
+            path = cursor.getString(column_index);
+            cursor.close();
+        }
+
+        return ((path == null || path.isEmpty()) ? (uri.getPath()) : path);
+    }
+    private void copy(File source, File destination) {
+        FileChannel in = null;
+        FileChannel out = null;
+        try {
+            in = new FileInputStream(source).getChannel();
+            out = new FileOutputStream(destination).getChannel();
+        }
+        catch (FileNotFoundException  fileNotFoundException)
+        {
+            Toast.makeText(this,"File Not Found Exception",Toast.LENGTH_LONG).show();
+        }
+
+
+        try {
+            if(in != null)
+            in.transferTo(0, in.size(), out);
+        } catch(Exception exception){
+            // post to log
+        } finally {
+            try {
+                if (in != null)
+                    in.close();
+                if (out != null)
+                    out.close();
+            }
+            catch (IOException ioException)
+            {
+                Toast.makeText(this,"IO Exception",Toast.LENGTH_LONG).show();
+            }
+
+        }
+    }
 }
+
+
+
+
