@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Easy SMS Campaign</string>
+    <string name="import_contacts">Import Contacts</string>
+    <string name="export_contacts">Export Into Excel</string>
+    <string name="read_excel_data">Read From Excel</string>
+    <string name="enter_sms">Enter SMS</string>
+</resources>
