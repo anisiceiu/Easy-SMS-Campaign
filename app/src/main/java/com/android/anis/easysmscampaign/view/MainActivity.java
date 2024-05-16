@@ -369,14 +369,12 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     @Override
     public void onSendSMSButtonClicked() {
         Log.e(TAG, "onSendSMSButtonClicked: ");
-        Uri fileUri = mViewModel.initiateSendSMS();
-
 
         if (smsText == null || smsText.getText().toString().matches(""))
             {
                 displaySnackBar("SMS text is empty");
             }
-            else if(fileUri == null || importedExcelContactsList.isEmpty()){
+            else if(importedExcelContactsList.isEmpty()){
                 displaySnackBar("No recipients");
             }
          else {

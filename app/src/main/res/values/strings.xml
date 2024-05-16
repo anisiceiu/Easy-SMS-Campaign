@@ -4,4 +4,6 @@
     <string name="export_contacts">Export Into Excel</string>
     <string name="read_excel_data">Read From Excel</string>
     <string name="enter_sms">Enter SMS</string>
+    <string name="sim_1">SIM 1</string>
+    <string name="sim_2">SIM 2</string>
 </resources>
