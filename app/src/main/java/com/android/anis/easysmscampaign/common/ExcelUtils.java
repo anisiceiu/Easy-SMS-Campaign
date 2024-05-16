@@ -324,6 +324,7 @@ public class ExcelUtils {
 
                     // Adding cells with phone numbers to phoneNumberList
                     for (int i = 1; i < rowDataList.size(); i++) {
+                        if(!rowDataList.get(i).matches("") && rowDataList.get(i) != null)
                         phoneNumberList.add(new ContactResponse.PhoneNumber(rowDataList.get(i)));
                     }
 
@@ -336,7 +337,7 @@ public class ExcelUtils {
                      *
                      * Thus, importedExcelData list has appropriately mapped data
                      */
-
+                    if(!phoneNumberList.isEmpty())
                     importedExcelData.add(new ContactResponse(rowDataList.get(0), phoneNumberList));
                 }
 
