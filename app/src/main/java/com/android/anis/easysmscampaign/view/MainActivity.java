@@ -30,6 +30,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import com.airbnb.lottie.LottieAnimationView;
@@ -90,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     private LottieAnimationView exportLottieView;
     private LottieAnimationView readLottieView;
     private EditText smsText;
+    private RadioGroup simRadioGroup;
 
     private final String NO_DATA_ANIMATION = "no_data.json";
     private final String LOADING_ANIMATION = "loading.json";
@@ -298,8 +301,8 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
 
         destroyHandlerThreads();
 
-        mViewModel.getContactsFromCPLiveData().removeObservers(this);
-        mViewModel.isExcelGeneratedLiveData().removeObservers(this);
+        //mViewModel.getContactsFromCPLiveData().removeObservers(this);
+        //mViewModel.isExcelGeneratedLiveData().removeObservers(this);
     }
 
     @Override
@@ -307,6 +310,7 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
         Log.e(TAG, "initializeViews: ");
         importContactsButton = mBinding.importContactButton;
         smsText = mBinding.editDescription;
+        simRadioGroup = mBinding.simRadioGroup;
         shareButton = mBinding.shareExcelFloatingButton;
         contactsRecyclerView = mBinding.displayContactsRecyclerView;
         constraintLayout = mBinding.constraintLayout;
@@ -509,7 +513,11 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
 
     private void sendSMS()
     {
-        displaySnackBar("Sending SMS");
+        int selectedId = simRadioGroup.getCheckedRadioButtonId();
+        // find the radiobutton by returned id
+        RadioButton selectedRadioButton = findViewById(selectedId);
+
+        displaySnackBar("Sending SMS with "+selectedRadioButton.getText());
     }
 
     @Override
