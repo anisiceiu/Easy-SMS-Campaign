@@ -1,12 +1,9 @@
 package com.android.anis.easysmscampaign.view;
 
-import static androidx.core.app.ActivityCompat.startActivityForResult;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.ShareCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -20,7 +17,6 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Process;
@@ -50,9 +46,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
-
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -109,146 +102,6 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     private List<ContactResponse> contactsList;
     private List<ContactResponse> importedExcelContactsList;
 
-    /**
-     * Observer for getContactsFromCPLiveData
-     */
-    private final Observer<DataResponse<ContactResponse>> importContactsFromCPObserver = contactResponse ->  {
-        Log.e(TAG, "importContactsFromCPObserver onChanged()");
-
-        if (contactResponse.getState() == StateDefinition.State.SUCCESS) {
-            setupLottieAnimation(lottieAnimationView, NO_DATA_ANIMATION);
-
-            if (contactResponse.getData().size() > 0) {
-                contactsList.clear();
-                contactsList.addAll(contactResponse.getData());
-                displaySnackBar("Retrieved "+contactsList.size()+" contacts from device.");
-
-                // Disable Import button
-                disableUIComponent(importContactsButton);
-                setupLottieAnimation(importLottieView, DONE_ANIMATION);
-
-                // Enable Export button and set onClickListener
-                //enableUIComponent(exportExcelButton);
-                //exportExcelButton.setOnClickListener(view -> onExportIntoExcelButtonClicked());
-                mViewModel.initiateExport(contactsList);;
-            } else {
-                displaySnackBar("No contacts found");
-                setupLottieAnimation(lottieAnimationView, ERROR_ANIMATION);
-            }
-
-        } else if (contactResponse.getState() == StateDefinition.State.ERROR) {
-            setupLottieAnimation(lottieAnimationView, ERROR_ANIMATION);
-
-            String errorMessage = (contactResponse.getErrorData().getErrorStatus()
-                    + contactResponse.getErrorData().getErrorMessage());
-
-            setupLottieAnimation(importLottieView, CANCEL_ANIMATION);
-            displaySnackBar(errorMessage);
-        } else {
-            setupLottieAnimation(lottieAnimationView, LOADING_ANIMATION);
-        }
-    };
-
-    /**
-     * Observer for isExcelGeneratedLiveData
-     */
-    private final Observer<BooleanResponse> excelGenerationObserver = booleanResponse -> {
-        Log.e(TAG, "excelGenerationObserver onChanged()");
-
-        if (booleanResponse.getState() == StateDefinition.State.SUCCESS) {
-            setupLottieAnimation(lottieAnimationView, NO_DATA_ANIMATION);
-            displaySnackBar(Constants.EXCEL_FILE_NAME+" generated Successfully");
-
-            // Disable Export button
-            //disableUIComponent(exportExcelButton);
-            //setupLottieAnimation(exportLottieView, DONE_ANIMATION);
-
-            // Enable Read button and set onClickListener
-            //enableUIComponent(readExcelButton);
-            //readExcelButton.setOnClickListener(view -> onReadFromExcelButtonClicked());
-
-        } else if (booleanResponse.getState() == StateDefinition.State.ERROR) {
-            setupLottieAnimation(lottieAnimationView, ERROR_ANIMATION);
-
-            String errorMessage = (booleanResponse.getErrorData().getErrorStatus()
-                    + booleanResponse.getErrorData().getErrorMessage());
-
-            setupLottieAnimation(exportLottieView, CANCEL_ANIMATION);
-            displaySnackBar(errorMessage);
-        } else {
-            setupLottieAnimation(lottieAnimationView, LOADING_ANIMATION);
-        }
-    };
-
-    /**
-     * Observer for readContactsFromExcelLiveData
-     */
-    private final Observer<DataResponse<ContactResponse>> readExcelDataObserver = dataResponse -> {
-        Log.e(TAG, "readExcelDataObserver onChanged()");
-
-        if (dataResponse.getState() == StateDefinition.State.SUCCESS) {
-
-            if (dataResponse.getData().size() > 0) {
-                importedExcelContactsList.clear();
-                importedExcelContactsList.addAll(dataResponse.getData());
-                displaySnackBar("Fetched "+importedExcelContactsList.size()+" contacts from Excel.");
-
-                // Disable Read button
-                //disableUIComponent(readExcelButton);
-                //setupLottieAnimation(readLottieView, DONE_ANIMATION);
-
-                setupRecyclerView();
-            } else {
-                displaySnackBar("No contacts found");
-                setupLottieAnimation(lottieAnimationView, ERROR_ANIMATION);
-            }
-
-        } else if (dataResponse.getState() == StateDefinition.State.ERROR) {
-            setupLottieAnimation(lottieAnimationView, ERROR_ANIMATION);
-
-            String errorMessage = (dataResponse.getErrorData().getErrorStatus()
-                    + dataResponse.getErrorData().getErrorMessage());
-
-            setupLottieAnimation(readLottieView, CANCEL_ANIMATION);
-            displaySnackBar(errorMessage);
-        } else {
-            setupLottieAnimation(lottieAnimationView, LOADING_ANIMATION);
-        }
-    };
-
-
-    /**
-     * Importing contacts Runnable to parse data in a Background HandlerThread
-     */
-    private final Runnable importContactsRunnable = new Runnable() {
-        @Override
-        public void run() {
-            Log.e(TAG, "importContactsRunnable run: ");
-            mViewModel.initiateImport();
-        }
-    };
-
-    /**
-     * Generate Excel Runnable
-     */
-    private final Runnable generateExcelRunnable = new Runnable() {
-        @Override
-        public void run() {
-            Log.e(TAG, "generateExcelRunnable run: ");
-            mViewModel.initiateExport(contactsList);
-        }
-    };
-
-    /**
-     * Read Excel data runnable
-     */
-    private final Runnable readExcelDataRunnable = new Runnable() {
-        @Override
-        public void run() {
-            Log.e(TAG, "readExcelDataRunnable run: ");
-            mViewModel.initiateRead();
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -259,16 +112,8 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
         importedExcelContactsList = new ArrayList<>();
 
         mViewModel = new ViewModelProvider(this).get(MainActivityViewModel.class);
-        //mViewModel.getContactsFromCPLiveData().observe(this, importContactsFromCPObserver);
-        //mViewModel.isExcelGeneratedLiveData().observe(this, excelGenerationObserver);
-        //mViewModel.readContactsFromExcelLiveData().observe(this, readExcelDataObserver);
-
 
         initializeViews();
-
-        setupHandlerThreads();
-
-
     }
 
     @Override
@@ -298,11 +143,6 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        destroyHandlerThreads();
-
-        //mViewModel.getContactsFromCPLiveData().removeObservers(this);
-        //mViewModel.isExcelGeneratedLiveData().removeObservers(this);
     }
 
     @Override
@@ -330,36 +170,7 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
         lottieView.playAnimation();
     }
 
-    @Override
-    public void setupHandlerThreads() {
-        Log.e(TAG, "setupHandlerThreads: ");
 
-        // Import Contacts handler thread
-        importContactsHandlerThread = new HandlerThread("ImportContactsThread",
-                Process.THREAD_PRIORITY_BACKGROUND);
-        importContactsHandlerThread.start();
-        contactsHandler = new Handler(importContactsHandlerThread.getLooper());
-
-        // Generate Excel handler thread
-        generateExcelHandlerThread = new HandlerThread("GenerateExcelThread",
-                Process.THREAD_PRIORITY_BACKGROUND);
-        generateExcelHandlerThread.start();
-        //excelHandler = new Handler(generateExcelHandlerThread.getLooper());
-
-        // Read Excel handler thread
-        readExcelDataHandlerThread = new HandlerThread("ReadExcelHandlerThread",
-                Process.THREAD_PRIORITY_BACKGROUND);
-        readExcelDataHandlerThread.start();
-        //readExcelHandler = new Handler(readExcelDataHandlerThread.getLooper());
-    }
-
-    @Override
-    public void destroyHandlerThreads() {
-        Log.e(TAG, "destroyHandlerThreads: ");
-        importContactsHandlerThread.quitSafely();
-        generateExcelHandlerThread.quitSafely();
-        readExcelDataHandlerThread.quitSafely();
-    }
 
     @Override
     public void onImportContactButtonClicked() {
@@ -462,8 +273,7 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
                         isUIDisabled = true;
 
                         disableUIComponent(importContactsButton);
-                        //disableUIComponent(exportExcelButton);
-                        //disableUIComponent(readExcelButton);
+
                     }
                 } else if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                     // Called when user selects 'ALLOW'
