@@ -7,13 +7,17 @@ import android.util.Log;
 import com.android.anis.easysmscampaign.data.ContactResponse;
 
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,7 +36,9 @@ public class ExcelUtils {
     public static final String TAG = "ExcelUtil";
     private static Cell cell;
     private static Sheet sheet;
+    private static Sheet sheet_xlsx;
     private static Workbook workbook;
+    private static Workbook workbook_xlsx;
     private static CellStyle headerCellStyle;
 
     private static List<ContactResponse> importedExcelData;
@@ -108,9 +114,9 @@ public class ExcelUtils {
      */
     private static void setHeaderCellStyle() {
         headerCellStyle = workbook.createCellStyle();
-        headerCellStyle.setFillForegroundColor(HSSFColor.AQUA.index);
-        headerCellStyle.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
-        headerCellStyle.setAlignment(CellStyle.ALIGN_CENTER);
+        //headerCellStyle.setFillForegroundColor(HSSFColor.AQUA.index);
+        //headerCellStyle.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
+        //headerCellStyle.setAlignment(CellStyle.ALIGN_CENTER);
     }
 
     /**
@@ -361,4 +367,88 @@ public class ExcelUtils {
 
         return importedExcelData;
     }
+    public static List<ContactResponse> getExcelDataFromFileXLSX(File file) {
+        importedExcelData = new ArrayList<>();
+
+        FileInputStream fileInputStream = null;
+
+        try {
+            fileInputStream = new FileInputStream(file);
+            Log.e(TAG, "Reading from Excel XLSX" + file.length());
+
+            // Create instance having reference to .xls file
+            try {
+                workbook_xlsx = new XSSFWorkbook(fileInputStream);
+            }
+            catch (Exception d) {
+
+                Log.e(TAG, "Reading from Excel workbook_xlsx "+d.toString() + workbook_xlsx.getSheetName(0));
+            }
+            // Fetch sheet at position 'i' from the workbook
+            sheet_xlsx = workbook_xlsx.getSheetAt(0);
+            Log.e(TAG, "Reading from Excel sheet_xlsx " + sheet_xlsx.getSheetName());
+            // Iterate through each row
+            for (Row row : sheet_xlsx) {
+                int index = 0;
+                List<String> rowDataList = new ArrayList<>();
+                List<ContactResponse.PhoneNumber> phoneNumberList = new ArrayList<>();
+
+                if (row.getRowNum() > 0) {
+                    // Iterate through all the columns in a row (Excluding header row)
+                    Iterator<Cell> cellIterator = row.cellIterator();
+
+                    while (cellIterator.hasNext()) {
+                        Cell cell = cellIterator.next();
+                        // Check cell type and format accordingly
+                        switch (cell.getCellType()) {
+                            case Cell.CELL_TYPE_NUMERIC:
+
+                                break;
+                            case Cell.CELL_TYPE_STRING:
+                                rowDataList.add(index, cell.getStringCellValue());
+                                index++;
+                                break;
+                        }
+                    }
+
+                    // Adding cells with phone numbers to phoneNumberList
+                    for (int i = 1; i < rowDataList.size(); i++) {
+                        if(!rowDataList.get(i).matches("") && rowDataList.get(i) != null)
+                            phoneNumberList.add(new ContactResponse.PhoneNumber(rowDataList.get(i)));
+                    }
+
+                    /**
+                     * Index 0 of rowDataList will Always have name.
+                     * So, passing it as 'name' in ContactResponse
+                     *
+                     * Index 1 onwards of rowDataList will have phone numbers (if >1 numbers)
+                     * So, adding them to phoneNumberList
+                     *
+                     * Thus, importedExcelData list has appropriately mapped data
+                     */
+                    if(!phoneNumberList.isEmpty())
+                        importedExcelData.add(new ContactResponse(rowDataList.get(0), phoneNumberList));
+                }
+
+            }
+
+        } catch (IOException e) {
+            Log.e(TAG, "Error Reading Exception: ", e);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to read file due to Exception: ", e);
+
+        } finally {
+            try {
+                if (null != fileInputStream) {
+                    fileInputStream.close();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+        return importedExcelData;
+    }
+
 }

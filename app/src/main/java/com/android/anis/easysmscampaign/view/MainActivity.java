@@ -49,6 +49,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
 
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -531,12 +534,25 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
                 InputStream inputStream = getContentResolver().openInputStream(uri);
                 File file = new File(this.getExternalFilesDir(null), filename);
                 copyInputStreamToFile(inputStream,file);
-                importedExcelContactsList = ExcelUtils.getExcelDataFromFile(file);
+                if(filename.toLowerCase().contains(".xlsx"))
+                {
+
+                    importedExcelContactsList = ExcelUtils.getExcelDataFromFileXLSX(file);
+                }
+                else if(filename.toLowerCase().contains(".xls")) {
+
+                    importedExcelContactsList = ExcelUtils.getExcelDataFromFile(file);
+                }
+                else {
+                    displaySnackBar("Not a valid excel file["+filename+"].");
+                }
                 Log.e(TAG,"Your Contact Count:"+importedExcelContactsList.size());
 
                 //setupLottieAnimation(readLottieView, DONE_ANIMATION);
                 setupRecyclerView();
             } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
 
