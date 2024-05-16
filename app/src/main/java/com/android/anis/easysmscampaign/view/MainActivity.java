@@ -23,6 +23,7 @@ import android.os.HandlerThread;
 import android.os.Process;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.telephony.SmsManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.util.Log;
@@ -97,10 +98,10 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     private final String CANCEL_ANIMATION = "cancel.json";
 
     private final String[] PERMISSIONS = {
-            Manifest.permission.READ_CONTACTS,
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_PHONE_STATE
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.SEND_SMS
     };
 
     private List<ContactResponse> contactsList;
@@ -192,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
         } else if (importedExcelContactsList.isEmpty()) {
             displaySnackBar("No recipients");
         } else {
-            sendSMS();
+            sendSMS(smsText.getText().toString());
         }
     }
 
@@ -320,10 +321,16 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
      * Methods: File open copy read excel
      */
 
-    private void sendSMS() {
+    private void sendSMS(String messageText) {
+        int simIndex = 0;
         int selectedId = simRadioGroup.getCheckedRadioButtonId();
         // find the radiobutton by returned id
         RadioButton selectedRadioButton = findViewById(selectedId);
+
+        if(selectedRadioButton.getText() == "SIM 2")
+        {
+            simIndex = 1;
+        }
 
         final ArrayList<Integer> simCardList = new ArrayList<>();
         SubscriptionManager subscriptionManager = (SubscriptionManager) getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
@@ -347,7 +354,28 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
             simCardList.add(subscriptionId);
         }
 
-        displaySnackBar("Sending SMS with SIM Count : "+simCardList.size());
+        if(!simCardList.isEmpty())
+        {
+
+            int smsToSendFrom = simCardList.get(simIndex); //assign your desired sim to send sms, or user selected choice
+
+            for(int i=0;i< importedExcelContactsList.size(); i++) {
+                String phoneNumber = importedExcelContactsList.get(i).getPhoneNumberList().get(0).getNumber();
+                SmsManager.getSmsManagerForSubscriptionId(smsToSendFrom)
+                        .sendTextMessage(phoneNumber, null, messageText, null, null); //use your phone number, message and pending intents
+            }
+        }
+        else
+        {
+            SmsManager smsManager = SmsManager.getDefault();
+            for(int i=0;i< importedExcelContactsList.size(); i++) {
+                String phoneNumber = importedExcelContactsList.get(i).getPhoneNumberList().get(0).getNumber();
+                smsManager.sendTextMessage(phoneNumber, null, messageText, null, null);
+            }
+        }
+
+
+        displaySnackBar("Sending SMS Completed");
     }
 
     @Override
