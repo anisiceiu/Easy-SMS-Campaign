@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -22,6 +23,8 @@ import android.os.HandlerThread;
 import android.os.Process;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -96,7 +99,8 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     private final String[] PERMISSIONS = {
             Manifest.permission.READ_CONTACTS,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_PHONE_STATE
     };
 
     private List<ContactResponse> contactsList;
@@ -171,7 +175,6 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     }
 
 
-
     @Override
     public void onImportContactButtonClicked() {
         Log.e(TAG, "onImportContactButtonClicked: ");
@@ -180,20 +183,16 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
     }
 
 
-
     @Override
     public void onSendSMSButtonClicked() {
         Log.e(TAG, "onSendSMSButtonClicked: ");
 
-        if (smsText == null || smsText.getText().toString().matches(""))
-            {
-                displaySnackBar("SMS text is empty");
-            }
-            else if(importedExcelContactsList.isEmpty()){
-                displaySnackBar("No recipients");
-            }
-         else {
-                sendSMS();
+        if (smsText == null || smsText.getText().toString().matches("")) {
+            displaySnackBar("SMS text is empty");
+        } else if (importedExcelContactsList.isEmpty()) {
+            displaySnackBar("No recipients");
+        } else {
+            sendSMS();
         }
     }
 
@@ -321,13 +320,34 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
      * Methods: File open copy read excel
      */
 
-    private void sendSMS()
-    {
+    private void sendSMS() {
         int selectedId = simRadioGroup.getCheckedRadioButtonId();
         // find the radiobutton by returned id
         RadioButton selectedRadioButton = findViewById(selectedId);
 
-        displaySnackBar("Sending SMS with "+selectedRadioButton.getText());
+        final ArrayList<Integer> simCardList = new ArrayList<>();
+        SubscriptionManager subscriptionManager = (SubscriptionManager) getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            checkPermissionsAtRuntime();
+            return;
+        }
+        final List<SubscriptionInfo> subscriptionInfoList = subscriptionManager
+                .getActiveSubscriptionInfoList();
+        for (SubscriptionInfo subscriptionInfo : subscriptionInfoList) {
+            int subscriptionId = subscriptionInfo.getSubscriptionId();
+            simCardList.add(subscriptionId);
+        }
+
+        displaySnackBar("Sending SMS with SIM Count : "+simCardList.size());
     }
 
     @Override
