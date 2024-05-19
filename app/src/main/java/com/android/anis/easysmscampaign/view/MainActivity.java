@@ -361,8 +361,19 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
 
             for(int i=0;i< importedExcelContactsList.size(); i++) {
                 String phoneNumber = importedExcelContactsList.get(i).getPhoneNumberList().get(0).getNumber();
-                SmsManager.getSmsManagerForSubscriptionId(smsToSendFrom)
-                        .sendTextMessage(phoneNumber, null, messageText, null, null); //use your phone number, message and pending intents
+
+                if(messageText.length() > 160)
+                {
+                    ArrayList<String> parts = SmsManager.getSmsManagerForSubscriptionId(smsToSendFrom).divideMessage(messageText);
+                    SmsManager.getSmsManagerForSubscriptionId(smsToSendFrom)
+                            .sendMultipartTextMessage(phoneNumber, null, parts, null, null);
+                }
+                else {
+
+                    SmsManager.getSmsManagerForSubscriptionId(smsToSendFrom)
+                            .sendTextMessage(phoneNumber, null, messageText, null, null);
+                }
+
             }
         }
         else
@@ -370,7 +381,14 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
             SmsManager smsManager = SmsManager.getDefault();
             for(int i=0;i< importedExcelContactsList.size(); i++) {
                 String phoneNumber = importedExcelContactsList.get(i).getPhoneNumberList().get(0).getNumber();
-                smsManager.sendTextMessage(phoneNumber, null, messageText, null, null);
+                if(messageText.length()>160)
+                {
+                    ArrayList<String> parts = smsManager.divideMessage(messageText);
+                    smsManager.sendMultipartTextMessage(phoneNumber, null, parts, null, null);
+                }
+                else {
+                    smsManager.sendTextMessage(phoneNumber, null, messageText, null, null);
+                }
             }
         }
 
@@ -408,7 +426,8 @@ public class MainActivity extends AppCompatActivity implements IMainActivityCont
                     importedExcelContactsList = ExcelUtils.getExcelDataFromFile(file);
                 }
                 else {
-                    displaySnackBar("Not a valid excel file["+filename+"].");
+                    //displaySnackBar("Not a valid excel file["+filename+"].");
+                    importedExcelContactsList = ExcelUtils.getExcelDataFromFileXLSX(file);
                 }
                 Log.e(TAG,"Your Contact Count:"+importedExcelContactsList.size());
 
